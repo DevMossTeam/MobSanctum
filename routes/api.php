@@ -41,4 +41,3 @@ Route::get('/user/{uid}', [SignUpController::class, 'getUserByUid']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [GetProfileController::class, 'getProfile']);
 });
-
