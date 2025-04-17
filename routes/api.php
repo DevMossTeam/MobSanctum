@@ -6,6 +6,7 @@ use App\Http\Controllers\API\SignInController;
 use App\Http\Controllers\API\SignUpController;
 use App\Http\Controllers\API\GetProfileController;
 use App\Http\Controllers\API\UpdateProfileController;
+use App\Http\Controllers\API\SecurityController; // ✅ Tambahkan ini
 
 /*
 |--------------------------------------------------------------------------
@@ -17,7 +18,7 @@ use App\Http\Controllers\API\UpdateProfileController;
 |
 */
 
-// ✅ Route untuk user terautentikasi via Sanctum
+// ✅ Autentikasi pengguna (Sanctum)
 Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
     return response()->json($request->user());
 });
@@ -31,13 +32,20 @@ Route::post('/register-step1', [SignUpController::class, 'registerStep1']);
 Route::post('/verify-otp', [SignUpController::class, 'verifyOtp']);
 Route::post('/register-step3', [SignUpController::class, 'registerStep3']);
 
-// ✅ User public data
+// ✅ Data pengguna publik
 Route::get('/user', [SignUpController::class, 'getUser']);
 Route::get('/user/{uid}', [SignUpController::class, 'getUserByUid']);
 
-// ✅ Protected profile routes
+// ✅ Reset password via OTP (tanpa login)
+Route::post('/password/send-reset-otp', [SecurityController::class, 'sendResetPasswordOtp']);
+
+// ✅ Protected routes (membutuhkan token autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
+    // Profil pengguna
     Route::get('/profile', [GetProfileController::class, 'getProfile']);
-    Route::post('/profile/update', [UpdateProfileController::class, 'updateProfile'])
-    ->middleware('auth:sanctum');
+    Route::post('/profile/update', [UpdateProfileController::class, 'updateProfile']);
+
+    // Keamanan
+    Route::post('/password/change', [SecurityController::class, 'changePassword']);
+    Route::post('/email/send-change-otp', [SecurityController::class, 'sendChangeEmailOtp']);
 });
