@@ -9,64 +9,138 @@ use Illuminate\Support\Facades\Validator;
 
 class UpdateProfileController extends Controller
 {
+    /**
+     * Update profil: nama_pengguna, nama_lengkap, upload baru, atau hapus foto via flag.
+     * POST /profile/update
+     */
     public function updateProfile(Request $request)
     {
         $user = $request->user();
         if (!$user) {
-            return response()->json(['success' => false, 'message' => 'User tidak terautentikasi.'], 401);
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak terautentikasi.'
+            ], 401);
         }
 
-        // Validasi
+        // Validasi input
         $validator = Validator::make($request->all(), [
-            'nama_pengguna' => 'nullable|string|max:255',
-            'nama_lengkap'  => 'nullable|string|max:255',
-            'profile_pic'   => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'nama_pengguna'      => 'nullable|string|max:255',
+            'nama_lengkap'       => 'nullable|string|max:255',
+            'profile_pic'        => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'delete_profile_pic' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors'  => $validator->errors()
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
-        // Update teks
-        if ($request->filled('nama_pengguna')) {
-            $user->nama_pengguna = $request->input('nama_pengguna');
+        try {
+            // 1) Hapus foto lama jika flag delete_profile_pic = true
+            if ($request->boolean('delete_profile_pic')) {
+                $this->deleteProfileFileIfExists($user->profile_pic);
+                $user->profile_pic = ""; // kosongkan URL
+            }
+
+            // 2) Update teks
+            if ($request->filled('nama_pengguna')) {
+                $user->nama_pengguna = $request->input('nama_pengguna');
+            }
+            if ($request->filled('nama_lengkap')) {
+                $user->nama_lengkap = $request->input('nama_lengkap');
+            }
+
+            // 3) Upload foto baru
+            if ($request->hasFile('profile_pic')) {
+                // hapus file lama (jika masih ada)
+                $this->deleteProfileFileIfExists($user->profile_pic);
+
+                // simpan file baru
+                $file = $request->file('profile_pic');
+                $path = $file->store('uploads/profile', 'public');
+                $user->profile_pic = url("storage/{$path}");
+            }
+
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profil berhasil diperbarui!',
+                'user'    => [
+                    'uid'           => $user->uid,
+                    'nama_pengguna' => $user->nama_pengguna,
+                    'nama_lengkap'  => $user->nama_lengkap,
+                    'email'         => $user->email,
+                    'profile_pic'   => $user->profile_pic,
+                    'role'          => $user->role,
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memperbarui profil.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Hapus foto profil saja.
+     * POST /profile/delete-image
+     */
+    public function deleteProfileImage(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak terautentikasi.'
+            ], 401);
         }
 
-        if ($request->filled('nama_lengkap')) {
-            $user->nama_lengkap = $request->input('nama_lengkap');
+        // Jika tidak ada foto, langsung sukses
+        if (empty($user->profile_pic)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada foto profil untuk dihapus.',
+                'user'    => [
+                    'uid'           => $user->uid,
+                    'profile_pic'   => $user->profile_pic,
+                ],
+            ], 200);
         }
 
-        // Update foto profil
-        if ($request->hasFile('profile_pic')) {
-            $file = $request->file('profile_pic');
-            $path = $file->store('uploads/profile', 'public');
-
-            // Optionally: hapus file lama
-            // if ($user->profile_pic && Storage::disk('public')->exists(str_replace('storage/', '', parse_url($user->profile_pic, PHP_URL_PATH)))) {
-            //     Storage::disk('public')->delete(str_replace('storage/', '', parse_url($user->profile_pic, PHP_URL_PATH)));
-            // }
-
-            // Simpan URL publik
-            $user->profile_pic = url("storage/{$path}");
-        }
-
+        // Hapus fisik & clear kolom
+        $this->deleteProfileFileIfExists($user->profile_pic);
+        $user->profile_pic = "";
         $user->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Profil berhasil diperbarui!',
+            'message' => 'Foto profil berhasil dihapus.',
             'user'    => [
                 'uid'           => $user->uid,
-                'nama_pengguna' => $user->nama_pengguna,
-                'nama_lengkap'  => $user->nama_lengkap,
-                'email'         => $user->email,
                 'profile_pic'   => $user->profile_pic,
-                'role'          => $user->role,
             ],
         ], 200);
+    }
+
+    /**
+     * Helper: hapus file di disk 'public' kalau ada.
+     */
+    private function deleteProfileFileIfExists($profilePicUrl)
+    {
+        if (empty($profilePicUrl)) {
+            return;
+        }
+        $parsed       = parse_url($profilePicUrl, PHP_URL_PATH);
+        $relativePath = ltrim(str_replace('/storage/', '', $parsed), '/');
+        if (Storage::disk('public')->exists($relativePath)) {
+            Storage::disk('public')->delete($relativePath);
+        }
     }
 }

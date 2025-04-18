@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Profil pengguna
     Route::get('/profile', [GetProfileController::class, 'getProfile']);
     Route::post('/profile/update', [UpdateProfileController::class, 'updateProfile']);
+    Route::post('/profile/delete-image', [UpdateProfileController::class, 'deleteProfileImage']);
 
     // Keamanan
     Route::post('/password/change', [SecurityController::class, 'changePassword']);
