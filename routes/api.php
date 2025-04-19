@@ -6,15 +6,14 @@ use App\Http\Controllers\API\SignInController;
 use App\Http\Controllers\API\SignUpController;
 use App\Http\Controllers\API\GetProfileController;
 use App\Http\Controllers\API\UpdateProfileController;
-use App\Http\Controllers\API\SecurityController; // ✅ Tambahkan ini
+use App\Http\Controllers\API\SecurityController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 |
-| Di sini Anda dapat mendaftarkan route API untuk aplikasi Anda. Semua route
-| akan dimuat melalui RouteServiceProvider dan diberikan grup middleware "api".
+| Route API untuk aplikasi MediaExplant.
 |
 */
 
@@ -38,15 +37,23 @@ Route::get('/user/{uid}', [SignUpController::class, 'getUserByUid']);
 
 // ✅ Reset password via OTP (tanpa login)
 Route::post('/password/send-reset-otp', [SecurityController::class, 'sendResetPasswordOtp']);
+Route::post('/password/reset', [SecurityController::class, 'resetPassword']); // ✅ tambahkan ini
 
 // ✅ Protected routes (membutuhkan token autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
-    // Profil pengguna
-    Route::get('/profile', [GetProfileController::class, 'getProfile']);
-    Route::post('/profile/update', [UpdateProfileController::class, 'updateProfile']);
-    Route::post('/profile/delete-image', [UpdateProfileController::class, 'deleteProfileImage']);
+    // Ganti Password
+    Route::post('/password/change',             [SecurityController::class, 'changePassword']);
 
-    // Keamanan
-    Route::post('/password/change', [SecurityController::class, 'changePassword']);
-    Route::post('/email/send-change-otp', [SecurityController::class, 'sendChangeEmailOtp']);
+    // Ganti Email - Step 1 (email lama)
+    Route::post('/email/send-change-otp',        [SecurityController::class, 'sendChangeEmailOtp']);
+    Route::post('/email/verify-old-email-otp',  [SecurityController::class, 'verifyOldEmailOtp']);
+
+    // Ganti Email - Step 2 (email baru)
+    Route::post('/email/send-new-email-otp',     [SecurityController::class, 'sendNewEmailOtp']);
+    Route::post('/email/verify-new-email-otp',  [SecurityController::class, 'verifyNewEmailOtp']);
+
+    // Lupa Password
+    Route::post('/password/send-reset-otp',      [SecurityController::class, 'sendResetPasswordOtp']);
+    Route::post('/password/verify-reset-otp',    [SecurityController::class, 'verifyResetPasswordOtp']);
+    Route::post('/password/reset',               [SecurityController::class, 'resetPassword']);
 });
