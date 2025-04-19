@@ -35,9 +35,10 @@ Route::post('/register-step3', [SignUpController::class, 'registerStep3']);
 Route::get('/user', [SignUpController::class, 'getUser']);
 Route::get('/user/{uid}', [SignUpController::class, 'getUserByUid']);
 
-// ✅ Reset password via OTP (tanpa login)
-Route::post('/password/send-reset-otp', [SecurityController::class, 'sendResetPasswordOtp']);
-Route::post('/password/reset', [SecurityController::class, 'resetPassword']); // ✅ tambahkan ini
+// Lupa Password
+Route::post('/password/send-reset-otp',      [SecurityController::class, 'sendResetPasswordOtp']);
+Route::post('/password/verify-reset-otp',    [SecurityController::class, 'verifyResetPasswordOtp']);
+Route::post('/password/reset',               [SecurityController::class, 'resetPassword']);
 
 // ✅ Protected routes (membutuhkan token autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
@@ -51,9 +52,4 @@ Route::middleware('auth:sanctum')->group(function () {
     // Ganti Email - Step 2 (email baru)
     Route::post('/email/send-new-email-otp',     [SecurityController::class, 'sendNewEmailOtp']);
     Route::post('/email/verify-new-email-otp',  [SecurityController::class, 'verifyNewEmailOtp']);
-
-    // Lupa Password
-    Route::post('/password/send-reset-otp',      [SecurityController::class, 'sendResetPasswordOtp']);
-    Route::post('/password/verify-reset-otp',    [SecurityController::class, 'verifyResetPasswordOtp']);
-    Route::post('/password/reset',               [SecurityController::class, 'resetPassword']);
 });
