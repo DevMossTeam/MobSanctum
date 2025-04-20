@@ -1,0 +1,190 @@
+<?php
+
+namespace App\Http\Controllers\API;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Models\Pesan;
+use Carbon\Carbon;
+// Tambahkan import TextPart
+use Symfony\Component\Mime\Part\TextPart;
+
+class PesanController extends Controller
+{
+    /**
+     * Simpan pesan dari user dan kirim email HTML bergaya.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function store(Request $request)
+    {
+        // 1. Validasi input
+        $validator = Validator::make($request->all(), [
+            'pesan' => 'required|string',
+            'email' => 'required|email',
+            'nama'  => 'required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        // 2. Generate ID acak unik
+        do {
+            $id = Str::upper(Str::random(10)); // Ex: 7XG9YKD2WQ
+        } while (Pesan::where('id', $id)->exists());
+
+        // 3. Simpan pesan
+        $pesan = Pesan::create([
+            'id'           => $id,
+            'pesan'        => $request->pesan,
+            'email'        => $request->email,
+            'nama'         => $request->nama,
+            'status'       => 'masukan',
+            'status_read'  => 'belum',
+            'created_at'   => Carbon::now(),
+        ]);
+
+        // 4. Siapkan konten email
+        $plaintext = <<<TEXT
+Halo {$pesan->nama},
+
+Terima kasih telah mengirimkan masukan kepada kami.
+ID Pesan Anda: {$pesan->id}
+
+Kami akan menanggapinya secepat mungkin.
+
+Salam hangat,
+Tim Dukungan MediaExplant
+TEXT;
+
+$html = <<<HTML
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Konfirmasi Masukan</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial, sans-serif;">
+
+  <!-- Wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <!-- Card -->
+        <table width="600" cellpadding="0" cellspacing="0"
+               style="background:#FCFCFC;border-radius:16px;overflow:hidden;
+                      box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="
+              background:#9A0605;
+              padding: 24px;
+              text-align: center;
+            ">
+              <img src="https://yourdomain.com/assets/logo.png"
+                   alt="MediaExplant"
+                   width="72" height="72"
+                   style="display:block;margin:0 auto 12px;">
+              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:bold;">
+                MediaExplant
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;color:#333333;line-height:1.7;font-size:16px;">
+              <p style="margin:0 0 16px;">
+                Hai <strong>{$pesan->nama}</strong>,
+              </p>
+              <p style="margin:0 0 16px;">
+                Terima kasih telah mengirimkan <strong>masukan</strong> kepada kami.
+              </p>
+              <p style="
+                margin:24px auto;
+                display:inline-block;
+                background:#f0f0f0;
+                padding:14px 24px;
+                border-radius:12px;
+                font-size:16px;
+                font-family:monospace;
+                color:#333333;
+              ">
+                ID Pesan Anda: <strong>{$pesan->id}</strong>
+              </p>
+              <p style="margin:24px 0 0;">
+                Kami akan menanggapi masukan Anda secepat mungkin.
+                Simpan ID di atas jika ingin melakukan follow‑up.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#fafafa;padding:16px;text-align:center;
+                       color:#777777;font-size:12px;">
+              © 2025 MediaExplant<br>
+              <a href="https://yourdomain.com/privacy"
+                 style="color:#777777;text-decoration:underline;">Privacy Policy</a>
+              &nbsp;|&nbsp;
+              <a href="https://yourdomain.com/terms"
+                 style="color:#777777;text-decoration:underline;">Terms of Service</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+HTML;
+
+
+
+        // 5. Kirim email multipart dengan TextPart
+        try {
+            Mail::send([], [], function ($message) use ($pesan, $plaintext, $html) {
+                $message->to($pesan->email, $pesan->nama)
+                        ->subject('Konfirmasi Masukan Anda');
+
+                // Dapatkan Symfony Email instance
+                $symfony = $message->getSymfonyMessage();
+
+                // Set multipart
+                $symfony->text($plaintext, 'utf-8');
+                $symfony->html($html, 'utf-8');
+            });
+
+            $emailStatus = 'Email konfirmasi HTML berhasil dikirim.';
+        } catch (\Exception $e) {
+            Log::error('Gagal kirim email konfirmasi: '.$e->getMessage());
+            $emailStatus = 'Pesan terkirim, namun email konfirmasi gagal.';
+        }
+
+        // 6. Respon API
+        return response()->json([
+            'success'      => true,
+            'message'      => 'Pesan berhasil dikirim!',
+            'email_status' => $emailStatus,
+            'data'         => [
+                'id'     => $pesan->id,
+                'nama'   => $pesan->nama,
+                'email'  => $pesan->email,
+                'status' => $pesan->status,
+                'waktu'  => $pesan->created_at->format('Y-m-d H:i:s'),
+            ],
+        ], 201);
+    }
+}

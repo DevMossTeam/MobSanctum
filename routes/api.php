@@ -7,6 +7,7 @@ use App\Http\Controllers\API\SignUpController;
 use App\Http\Controllers\API\GetProfileController;
 use App\Http\Controllers\API\UpdateProfileController;
 use App\Http\Controllers\API\SecurityController;
+use App\Http\Controllers\API\PesanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,8 +41,17 @@ Route::post('/password/send-reset-otp',      [SecurityController::class, 'sendRe
 Route::post('/password/verify-reset-otp',    [SecurityController::class, 'verifyResetPasswordOtp']);
 Route::post('/password/reset',               [SecurityController::class, 'resetPassword']);
 
+// ✅ Kirim Pesan (tanpa login)
+Route::post('/pesan', [PesanController::class, 'store']);
+
 // ✅ Protected routes (membutuhkan token autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
+
+     // Profil pengguna
+     Route::get('/profile', [GetProfileController::class, 'getProfile']);
+     Route::post('/profile/update', [UpdateProfileController::class, 'updateProfile']);
+     Route::post('/profile/delete-image', [UpdateProfileController::class, 'deleteProfileImage']);
+     
     // Ganti Password
     Route::post('/password/change',             [SecurityController::class, 'changePassword']);
 
@@ -53,3 +63,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/send-new-email-otp',     [SecurityController::class, 'sendNewEmailOtp']);
     Route::post('/email/verify-new-email-otp',  [SecurityController::class, 'verifyNewEmailOtp']);
 });
+// php artisan serve --host=192.168.1.21 --port=8000
