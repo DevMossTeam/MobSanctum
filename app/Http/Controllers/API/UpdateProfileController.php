@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class UpdateProfileController extends Controller
 {
     /**
      * Update profil: nama_pengguna, nama_lengkap, upload baru, atau hapus foto via flag.
-     * POST /profile/update
+     * POST /api/profile/update
      */
     public function updateProfile(Request $request)
     {
@@ -23,12 +24,20 @@ class UpdateProfileController extends Controller
             ], 401);
         }
 
-        // Validasi input
+        // Validasi input, nama_pengguna wajib unik kecuali milik user ini sendiri
         $validator = Validator::make($request->all(), [
-            'nama_pengguna'      => 'nullable|string|max:255',
+            'nama_pengguna'      => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('user', 'nama_pengguna')
+                    ->ignore($user->uid, 'uid'),
+            ],
             'nama_lengkap'       => 'nullable|string|max:255',
             'profile_pic'        => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'delete_profile_pic' => 'nullable|boolean',
+        ], [
+            'nama_pengguna.unique' => 'Nama pengguna sudah dipakai oleh user lain.',
         ]);
 
         if ($validator->fails()) {
@@ -40,10 +49,10 @@ class UpdateProfileController extends Controller
         }
 
         try {
-            // 1) Hapus foto lama jika flag delete_profile_pic = true
+            // 1) Hapus foto lama jika diminta
             if ($request->boolean('delete_profile_pic')) {
                 $this->deleteProfileFileIfExists($user->profile_pic);
-                $user->profile_pic = ""; // kosongkan URL
+                $user->profile_pic = "";
             }
 
             // 2) Update teks
@@ -56,10 +65,7 @@ class UpdateProfileController extends Controller
 
             // 3) Upload foto baru
             if ($request->hasFile('profile_pic')) {
-                // hapus file lama (jika masih ada)
                 $this->deleteProfileFileIfExists($user->profile_pic);
-
-                // simpan file baru
                 $file = $request->file('profile_pic');
                 $path = $file->store('uploads/profile', 'public');
                 $user->profile_pic = url("storage/{$path}");
@@ -79,6 +85,7 @@ class UpdateProfileController extends Controller
                     'role'          => $user->role,
                 ],
             ], 200);
+
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -89,8 +96,50 @@ class UpdateProfileController extends Controller
     }
 
     /**
+     * Cek ketersediaan nama_pengguna.
+     * GET /api/profile/check-username?nama_pengguna=...
+     */
+    public function checkUsername(Request $request)
+    {
+        $user     = $request->user();
+        $username = $request->query('nama_pengguna');
+
+        // Pastikan parameter terkirim
+        if (!$username) {
+            return response()->json([
+                'available' => false,
+                'message'   => 'Parameter nama_pengguna diperlukan.',
+            ], 400);
+        }
+
+        // Validasi unik (ignore user sendiri)
+        $validator = Validator::make(
+            ['nama_pengguna' => $username],
+            ['nama_pengguna' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('user', 'nama_pengguna')
+                    ->ignore($user->uid, 'uid'),
+            ]]
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'available' => false,
+                'message'   => 'Nama pengguna sudah dipakai.',
+            ], 200);
+        }
+
+        return response()->json([
+            'available' => true,
+            'message'   => 'Nama pengguna tersedia.',
+        ], 200);
+    }
+
+    /**
      * Hapus foto profil saja.
-     * POST /profile/delete-image
+     * POST /api/profile/delete-image
      */
     public function deleteProfileImage(Request $request)
     {
@@ -102,19 +151,17 @@ class UpdateProfileController extends Controller
             ], 401);
         }
 
-        // Jika tidak ada foto, langsung sukses
         if (empty($user->profile_pic)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Tidak ada foto profil untuk dihapus.',
                 'user'    => [
-                    'uid'           => $user->uid,
-                    'profile_pic'   => $user->profile_pic,
+                    'uid'         => $user->uid,
+                    'profile_pic' => $user->profile_pic,
                 ],
             ], 200);
         }
 
-        // Hapus fisik & clear kolom
         $this->deleteProfileFileIfExists($user->profile_pic);
         $user->profile_pic = "";
         $user->save();
@@ -123,8 +170,8 @@ class UpdateProfileController extends Controller
             'success' => true,
             'message' => 'Foto profil berhasil dihapus.',
             'user'    => [
-                'uid'           => $user->uid,
-                'profile_pic'   => $user->profile_pic,
+                'uid'         => $user->uid,
+                'profile_pic' => $user->profile_pic,
             ],
         ], 200);
     }

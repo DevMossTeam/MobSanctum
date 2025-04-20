@@ -51,7 +51,8 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::get('/profile', [GetProfileController::class, 'getProfile']);
      Route::post('/profile/update', [UpdateProfileController::class, 'updateProfile']);
      Route::post('/profile/delete-image', [UpdateProfileController::class, 'deleteProfileImage']);
-     
+     Route::get('profile/check-username',    [UpdateProfileController::class, 'checkUsername']);
+
     // Ganti Password
     Route::post('/password/change',             [SecurityController::class, 'changePassword']);
 
