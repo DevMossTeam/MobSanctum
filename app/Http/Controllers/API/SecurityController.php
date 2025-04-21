@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use Exception;
 use Carbon\Carbon;
@@ -42,9 +43,33 @@ class SecurityController extends Controller
             ], 403);
         }
 
+        // Update password
         $user->update([
             'password' => Hash::make($request->new_password),
         ]);
+
+        // Kirim email notifikasi perubahan password
+        try {
+            $when = Carbon::now()->format('Y-m-d H:i:s');
+            $greet = property_exists($user, 'nama_pengguna') ? $user->nama_pengguna : $user->email;
+
+            Mail::raw(<<<TEXT
+Hai {$greet},
+
+Password akun Anda telah berhasil diubah pada {$when}.
+
+Jika ini bukan Anda, segera hubungi tim dukungan untuk mengamankan akun Anda.
+
+Salam,
+Tim MediaExplant
+TEXT
+            , function ($msg) use ($user) {
+                $msg->to($user->email)
+                    ->subject('Notifikasi: Password Berhasil Diubah');
+            });
+        } catch (Exception $e) {
+            Log::warning('Gagal mengirim email notifikasi ubah password: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -282,7 +307,7 @@ class SecurityController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors'  => $v->errors()
+                'errors'  => $v->errors(),
             ], 422);
         }
 
@@ -334,9 +359,33 @@ class SecurityController extends Controller
             ], 400);
         }
 
+        // Update password
         $user->password = Hash::make($request->new_password);
         $user->save();
         Cache::forget($cacheKey);
+
+        // Kirim email notifikasi reset password
+        try {
+            $when = Carbon::now()->format('Y-m-d H:i:s');
+            $greet = property_exists($user, 'nama_pengguna') ? $user->nama_pengguna : $user->email;
+
+            Mail::raw(<<<TEXT
+Hai {$greet},
+
+Password akun Anda telah berhasil direset pada {$when}.
+
+Jika ini bukan Anda, segera hubungi tim dukungan untuk mengamankan akun Anda.
+
+Salam,
+Tim MediaExplant
+TEXT
+            , function ($msg) use ($user) {
+                $msg->to($user->email)
+                    ->subject('Notifikasi: Password Berhasil Direset');
+            });
+        } catch (Exception $e) {
+            Log::warning('Gagal mengirim email notifikasi reset password: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
