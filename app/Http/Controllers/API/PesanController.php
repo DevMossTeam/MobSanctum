@@ -56,100 +56,102 @@ class PesanController extends Controller
 
         // 4. Siapkan konten email
         $plaintext = <<<TEXT
-Halo {$pesan->nama},
+        Halo {$pesan->nama},
 
-Terima kasih telah mengirimkan masukan kepada kami.
-ID Pesan Anda: {$pesan->id}
+        Terima kasih telah mengirimkan masukan kepada kami.
+        ID Pesan Anda: {$pesan->id}
 
-Kami akan menanggapinya secepat mungkin.
+        Kami akan menanggapi masukan Anda secepat mungkin.
 
-Salam hangat,
-Tim Dukungan MediaExplant
-TEXT;
+        Salam hangat,
+        Tim Dukungan MediaExplant
+        TEXT;
 
-$html = <<<HTML
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Konfirmasi Masukan</title>
-</head>
-<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial, sans-serif;">
-
-  <!-- Wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0">
-    <tr>
-      <td align="center" style="padding: 20px 0;">
-        <!-- Card -->
-        <table width="600" cellpadding="0" cellspacing="0"
-               style="background:#FCFCFC;border-radius:16px;overflow:hidden;
-                      box-shadow:0 4px 16px rgba(0,0,0,0.08);">
-          <!-- Header -->
-          <tr>
-            <td style="
-              background:#9A0605;
-              padding: 24px;
-              text-align: center;
-            ">
-              <img src="https://yourdomain.com/assets/logo.png"
-                   alt="MediaExplant"
-                   width="72" height="72"
-                   style="display:block;margin:0 auto 12px;">
-              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:bold;">
-                MediaExplant
-              </h1>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style="padding:32px;color:#333333;line-height:1.7;font-size:16px;">
-              <p style="margin:0 0 16px;">
-                Hai <strong>{$pesan->nama}</strong>,
-              </p>
-              <p style="margin:0 0 16px;">
-                Terima kasih telah mengirimkan <strong>masukan</strong> kepada kami.
-              </p>
-              <p style="
-                margin:24px auto;
-                display:inline-block;
-                background:#f0f0f0;
-                padding:14px 24px;
-                border-radius:12px;
-                font-size:16px;
-                font-family:monospace;
-                color:#333333;
-              ">
-                ID Pesan Anda: <strong>{$pesan->id}</strong>
-              </p>
-              <p style="margin:24px 0 0;">
-                Kami akan menanggapi masukan Anda secepat mungkin.
-                Simpan ID di atas jika ingin melakukan follow‑up.
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#fafafa;padding:16px;text-align:center;
-                       color:#777777;font-size:12px;">
-              © 2025 MediaExplant<br>
-              <a href="https://yourdomain.com/privacy"
-                 style="color:#777777;text-decoration:underline;">Privacy Policy</a>
-              &nbsp;|&nbsp;
-              <a href="https://yourdomain.com/terms"
-                 style="color:#777777;text-decoration:underline;">Terms of Service</a>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-
-</body>
-</html>
-HTML;
+        $html = <<<HTML
+        <!DOCTYPE html>
+        <html lang="id" xmlns="http://www.w3.org/1999/xhtml">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+          <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+          <title>Konfirmasi Masukan</title>
+          <style type="text/css">
+            body, table, td, p, a, li, blockquote {
+              -webkit-text-size-adjust:100%;
+              -ms-text-size-adjust:100%;
+            }
+            table, td {
+              mso-table-lspace:0pt;
+              mso-table-rspace:0pt;
+            }
+            img {
+              -ms-interpolation-mode:bicubic;
+            }
+            body {
+              margin:0;
+              padding:0;
+              width:100% !important;
+              height:100% !important;
+              font-family:Arial,sans-serif;
+              background-color:#f4f4f4;
+            }
+            @media only screen and (max-width:620px) {
+              .wrapper  { width:100% !important; padding:0 !important; }
+              .content  { padding:20px !important; }
+              .outer    { width:100% !important; border-radius:0 !important; }
+            }
+            a { color:inherit; text-decoration:underline; }
+            .ExternalClass { width:100%; line-height:100%; }
+          </style>
+        </head>
+        <body>
+          <center class="wrapper" style="width:100%;table-layout:fixed;background-color:#f4f4f4;padding:20px 0;">
+            <table class="outer" align="center" cellpadding="0" cellspacing="0" width="600"
+                   style="margin:0 auto;background:#FCFCFC;border-radius:16px;overflow:hidden;
+                          box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+              <!-- Body -->
+              <tr>
+                <td class="content" style="padding:32px;color:#333333;line-height:1.7;font-size:16px;">
+                  <p style="margin:0 0 16px;">
+                    Hai <strong>{$pesan->nama}</strong>,
+                  </p>
+                  <p style="margin:0 0 16px;">
+                    Terima kasih telah mengirimkan <strong>masukan</strong> kepada kami.
+                  </p>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"
+                         style="margin:24px auto;">
+                    <tr>
+                      <td style="background:#f0f0f0;padding:14px 24px;border-radius:12px;
+                                 font-family:monospace;font-size:16px;color:#333333;">
+                        ID Pesan Anda: <strong>{$pesan->id}</strong>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin:24px 0 0;">
+                    Kami akan menanggapi masukan Anda secepat mungkin.
+                  </p>
+                </td>
+              </tr>
+              <!-- Footer -->
+              <tr>
+                <td style="background:#fafafa;padding:16px;text-align:center;color:#777777;font-size:12px;">
+                  <p style="margin:0;">
+                    &copy; 2025 MediaExplant<br>
+                    <a href="https://yourdomain.com/privacy" style="color:#777777;text-decoration:underline;">
+                      Privacy Policy
+                    </a>
+                    &nbsp;|&nbsp;
+                    <a href="https://yourdomain.com/terms" style="color:#777777;text-decoration:underline;">
+                      Terms of Service
+                    </a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </center>
+        </body>
+        </html>
+        HTML;
 
 
 
