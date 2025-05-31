@@ -8,6 +8,8 @@ use App\Http\Controllers\API\GetProfileController;
 use App\Http\Controllers\API\UpdateProfileController;
 use App\Http\Controllers\API\SecurityController;
 use App\Http\Controllers\API\PesanController;
+use App\Http\Controllers\API\DeviceTokenController;
+use App\Http\Controllers\API\TaskController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,6 +43,12 @@ Route::post('/password/send-reset-otp',      [SecurityController::class, 'sendRe
 Route::post('/password/verify-reset-otp',    [SecurityController::class, 'verifyResetPasswordOtp']);
 Route::post('/password/reset',               [SecurityController::class, 'resetPassword']);
 
+Route::post('device-token',[DeviceTokenController::class,'store']);
+Route::get('device-tokens',[DeviceTokenController::class,'index']);
+Route::delete('device-token/{id}',[DeviceTokenController::class,'destroy']);
+
+Route::apiResource('tasks',TaskController::class);
+
 // ✅ Kirim Pesan (tanpa login)
 Route::post('/pesan', [PesanController::class, 'store']);
 
@@ -64,4 +72,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/email/send-new-email-otp',     [SecurityController::class, 'sendNewEmailOtp']);
     Route::post('/email/verify-new-email-otp',  [SecurityController::class, 'verifyNewEmailOtp']);
 });
-// php artisan serve --host=192.168.1.21 --port=8000
+// php artisan serve --host=192.168.1.9 --port=8000
